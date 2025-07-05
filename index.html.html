@@ -1,0 +1,238 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>綸綸餐飲店 線上點餐系統</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f6f6f6;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .category {
+      margin-top: 30px;
+    }
+    .category h2 {
+      border-bottom: 2px solid #ccc;
+      padding-bottom: 5px;
+    }
+    .menu-item {
+      background: #fff;
+      margin: 10px 0;
+      padding: 15px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .cart, .thank-you {
+      margin-top: 30px;
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      display: none;
+    }
+    .btn {
+      padding: 6px 10px;
+      cursor: pointer;
+      background-color: #ff9800;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      margin: 5px 5px 5px 0;
+    }
+    .btn:hover {
+      background-color: #e68900;
+    }
+    .form-group {
+      margin: 10px 0;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    #orderSummary {
+      text-align: left;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>綸綸餐飲店 線上點餐系統</h1>
+
+  <!-- 菜單區塊 -->
+  <div class="category">
+    <h2>🍚 飯類</h2>
+    <div id="riceMenu"></div>
+  </div>
+
+  <div class="category">
+    <h2>🍜 麵類</h2>
+    <div id="noodleMenu"></div>
+  </div>
+
+  <div class="category">
+    <h2>🍲 湯類</h2>
+    <div id="soupMenu"></div>
+  </div>
+
+  <button class="btn" onclick="toggleCart()">查看購物車</button>
+  <div class="cart" id="cart">
+    <h2>🛒 購物車</h2>
+    <ul id="cart-list"></ul>
+    <p>💵 總金額：<span id="total">0</span> 元</p>
+    <div class="form-group"><label for="name">姓名：</label><input type="text" id="name" placeholder="請輸入姓名"></div>
+    <div class="form-group"><label for="phone">電話：</label><input type="text" id="phone" placeholder="請輸入電話"></div>
+    <div class="form-group"><label for="orderType">用餐方式：</label><select id="orderType" onchange="toggleAddress()">
+      <option value="內用">內用</option>
+      <option value="外帶">外帶</option>
+      <option value="外送">外送</option>
+    </select></div>
+    <div class="form-group" id="addressGroup" style="display:none"><label for="address">地址（限外送填寫）：</label><input type="text" id="address" placeholder="請輸入外送地址"></div>
+    <div class="form-group"><label for="payment">付款方式：</label><select id="payment" onchange="togglePaymentFields()">
+      <option value="現金">現金</option>
+      <option value="信用卡">信用卡</option>
+      <option value="LINE PAY">LINE PAY</option>
+      <option value="APPLE PAY">APPLE PAY</option>
+    </select></div>
+    <div class="form-group" id="creditCardGroup" style="display:none"><label for="creditCard">信用卡卡號：</label><input type="text" id="creditCard" placeholder="請輸入信用卡號"></div>
+    <div class="form-group" id="linePayGroup" style="display:none"><label for="linePayCode">LINE PAY 條碼：</label><input type="text" id="linePayCode" placeholder="請輸入 LINE PAY 條碼"></div>
+    <div class="form-group" id="applePayGroup" style="display:none"><label for="applePayCode">APPLE PAY 條碼：</label><input type="text" id="applePayCode" placeholder="請輸入 APPLE PAY 條碼"></div>
+    <div class="form-group"><label for="invoiceType">發票處理方式：</label><select id="invoiceType" onchange="toggleInvoiceFields()">
+      <option value="紙本">紙本發票</option>
+      <option value="載具">載具</option>
+      <option value="統編">統編</option>
+    </select></div>
+    <div class="form-group" id="carrierGroup" style="display:none"><label for="carrier">載具條碼：</label><input type="text" id="carrier" placeholder="請輸入載具條碼"></div>
+    <div class="form-group" id="taxIdGroup" style="display:none"><label for="taxId">統一編號：</label><input type="text" id="taxId" placeholder="請輸入統編號碼"></div>
+    <button class="btn" onclick="submitOrder()">送出訂單</button>
+    <button class="btn" onclick="clearCart()">清空購物車</button>
+    <p id="message"></p>
+  </div>
+  <div class="thank-you" id="thankYouPage">
+    <h2>🎉 訂單已送出！</h2>
+    <div id="orderSummary"></div>
+  </div>
+
+  <script>
+    const riceItems = [
+      { name: '雞肉蓋飯', price: 80 },
+      { name: '牛肉鍋巴', price: 80 },
+      { name: '打拋豬飯', price: 75 },
+      { name: '打拋牛飯', price: 90 },
+      { name: '牛肉拼盤（含牛肉鍋巴、牛肉蓋飯、打拋牛飯、牛肉湯）', price: 185 },
+      { name: '牛肉炒飯', price: 90 },
+      { name: '炒飯', price: 55 },
+      { name: '咖哩飯', price: 65 },
+      { name: '蛋包飯', price: 65 },
+      { name: '牛肉蓋飯', price: 80 },
+      { name: '豬肉蓋飯', price: 75 },
+      { name: '雞肉蓋飯', price: 80 },
+    ];
+
+    const noodleItems = [
+      { name: '炒麵', price: 55 },
+      { name: '咖哩麵', price: 65 },
+      { name: '牛肉炒麵', price: 90 },
+      { name: '牛肉麵（小）', price: 100 },
+      { name: '牛肉麵（大）', price: 120 },
+      { name: '牛肉湯麵（無肉）', price: 70 },
+      { name: '炒泡麵', price: 55 },
+      { name: '火雞麵', price: 85 },
+      { name: '小熊貓麵', price: 90 },
+      { name: '麻醬麵', price: 55 },
+      { name: '餛飩麵', price: 80 },
+      { name: '拌麵（乾）', price: 50 },
+      { name: '榨菜肉絲麵（湯/乾）', price: 55 },
+    ];
+
+    const soupItems = [
+      { name: '魚丸湯', price: 45 },
+      { name: '牛肉湯', price: 80 },
+      { name: '貢丸湯', price: 50 },
+      { name: '味噌湯', price: 50 },
+      { name: '清湯', price: 45 },
+      { name: '餛飩湯', price: 70 },
+    ];
+
+    const cart = [];
+
+    function renderMenu(menuId, items) {
+      const container = document.getElementById(menuId);
+      items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'menu-item';
+        div.innerHTML = `
+          <span>${item.name} - ${item.price} 元</span>
+          <button class="btn" onclick="addToCart('${item.name}', ${item.price})">加入購物車</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    renderMenu('riceMenu', riceItems);
+    renderMenu('noodleMenu', noodleItems);
+    renderMenu('soupMenu', soupItems);
+
+    function addToCart(name, price) {
+      cart.push({ name, price });
+      renderCart();
+    }
+
+    function renderCart() {
+      const cartList = document.getElementById('cart-list');
+      cartList.innerHTML = '';
+      let total = 0;
+      cart.forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = `${item.name} - ${item.price} 元`;
+        cartList.appendChild(li);
+        total += item.price;
+      });
+      document.getElementById('total').textContent = total;
+    }
+
+    function clearCart() {
+      cart.length = 0;
+      renderCart();
+    }
+
+    function toggleCart() {
+      const cartDiv = document.getElementById('cart');
+      cartDiv.style.display = (cartDiv.style.display === 'none' || cartDiv.style.display === '') ? 'block' : 'none';
+    }
+
+    function togglePaymentFields() {
+      const payment = document.getElementById("payment").value;
+      document.getElementById("linePayGroup").style.display = (payment === "LINE PAY") ? "block" : "none";
+      document.getElementById("applePayGroup").style.display = (payment === "APPLE PAY") ? "block" : "none";
+      document.getElementById("creditCardGroup").style.display = (payment === "信用卡") ? "block" : "none";
+    }
+
+    function toggleAddress() {
+      const orderType = document.getElementById("orderType").value;
+      document.getElementById("addressGroup").style.display = (orderType === "外送") ? "block" : "none";
+    }
+
+    function toggleInvoiceFields() {
+      const invoiceType = document.getElementById("invoiceType").value;
+      document.getElementById("carrierGroup").style.display = (invoiceType === "載具") ? "block" : "none";
+      document.getElementById("taxIdGroup").style.display = (invoiceType === "統編") ? "block" : "none";
+    }
+
+    function submitOrder() {
+      alert("訂單送出（此範例未接後端）");
+    }
+  </script>
+</body>
+</html>
